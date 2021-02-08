@@ -2,10 +2,6 @@
 #Requires -Version 5.1
 
 BeforeAll {
-    $MailAdminParams = {
-        ($To -eq $ScriptAdmin) -and ($Priority -eq 'High') -and ($Subject -eq 'FAILURE')
-    }
-
     $testScript = $PSCommandPath.Replace('.Tests.ps1', '.ps1')
     $testParams = @{
         ScriptName  = 'Test'
@@ -37,7 +33,10 @@ Describe 'send an email to admin when' {
         .$testScript @testParams -ComputersNotInOU '.NonExistingFile.txt'
 
         Should -Invoke Send-MailHC -Exactly 1 -ParameterFilter {
-            (&$MailAdminParams) -and ($Message -like "*File * not found*")
+            ($To -eq $ScriptAdmin) -and 
+            ($Priority -eq 'High') -and 
+            ($Subject -eq 'FAILURE') -and 
+            ($Message -like "*File * not found*")
         }
     } 
 }
@@ -159,7 +158,7 @@ Describe 'do not create an Excel file when' {
         }
 
         .$testScript @testParams
-        
+
         Get-ChildItem -Path $testLogFolder | 
         Where-Object { $_.Name -like '*Printers installed.xlsx' } | 
         Should -BeNullOrEmpty
