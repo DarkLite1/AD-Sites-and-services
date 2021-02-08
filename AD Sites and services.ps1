@@ -3,12 +3,13 @@
         Send a summary of all sites and subnets in an Excel file to the user.
 
     .DESCRIPTION
-        Send a summary of all sites and subnets in an Excel file to the user. For all users that have
-        an office that is unknown in the subnets list, an Excel file will be created. Same goes for
-        all installed printers on servers that have an office location that is unknown.
+        Send a summary of all sites and subnets in an Excel file to the user. 
+        For all users that have an office that is unknown in the subnets list,
+        an Excel file will be created. Same goes for all installed printers on
+        servers that have an office location that is unknown.
 
-        This script is intended to run as a scheduled task and will not change anything. It will only
-        report on the found anomalies.
+        This script is intended to run as a scheduled task and will not change 
+        anything. It will only report on the found anomalies.
  #>
 
 Param (
