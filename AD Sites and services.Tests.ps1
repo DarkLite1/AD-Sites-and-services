@@ -8,10 +8,8 @@ BeforeAll {
         OU          = 'OU=XXX,OU=EU,DC=contoso,DC=net'
         CountryCode = 'XXX'
         MailTo      = 'bob@contoso.com'
-        LogFolder   = (New-Item "TestDrive:/log" -ItemType Directory).FullName
+        LogFolder   = "TestDrive:/log" 
     }
-
-    $testLogFolder = Join-Path $testParams.LogFolder "AD Reports\AD Sites and services\$($testParams.ScriptName)"
 
     Mock Get-ADReplicationSite
     Mock Get-ADReplicationSubnet
@@ -25,7 +23,7 @@ BeforeAll {
 Describe 'logging' {
     It 'create log folder' {
         .$testScript @testParams
-        $testLogFolder | Should -Exist
+        $testParams.LogFolder | Should -Exist
     } 
 }
 Describe 'send an email to admin when' {
@@ -42,7 +40,7 @@ Describe 'send an email to admin when' {
 }
 Describe 'create an Excel file when' {
     BeforeEach {
-        Remove-Item "$($testParams.LogFolder)\*" -Recurse -Force
+        Remove-Item "$($testParams.LogFolder)\*" -Recurse -Force -EA Ignore
     }
     It "AD Replication sites are found" {
         Mock Get-ADReplicationSite {
@@ -53,7 +51,7 @@ Describe 'create an Excel file when' {
 
         .$testScript @testParams
 
-        Get-ChildItem -Path $testLogFolder | 
+        Get-ChildItem -Path $testParams.LogFolder | 
         Where-Object { $_.Name -like '*Test AD Sites and subnets.xlsx' } | 
         Should -HaveCount 1
     } 
@@ -66,7 +64,7 @@ Describe 'create an Excel file when' {
 
         .$testScript @testParams
 
-        Get-ChildItem -Path $testLogFolder | 
+        Get-ChildItem -Path $testParams.LogFolder | 
         Where-Object { $_.Name -like '*Test AD Sites and subnets.xlsx' } | 
         Should -HaveCount 1
     } 
@@ -86,7 +84,7 @@ Describe 'create an Excel file when' {
 
         .$testScript @testParams
 
-        Get-ChildItem -Path $testLogFolder | 
+        Get-ChildItem -Path $testParams.LogFolder | 
         Where-Object { $_.Name -like '*AD Users.xlsx' } | 
         Should -HaveCount 1
     } 
@@ -110,14 +108,14 @@ Describe 'create an Excel file when' {
 
         .$testScript @testParams
 
-        Get-ChildItem -Path $testLogFolder | 
+        Get-ChildItem -Path $testParams.LogFolder | 
         Where-Object { $_.Name -like '*Printers installed.xlsx' } | 
         Should -HaveCount 1
     } 
 }
 Describe 'do not create an Excel file when' {
     BeforeEach {
-        Remove-Item "$($testParams.LogFolder)\*" -Recurse -Force
+        Remove-Item "$($testParams.LogFolder)\*" -Recurse -Force -EA Ignore
     }
     It "AD Users are found with an office that does exist in one of the subnets" {
         Mock Get-ADUserHC {
@@ -135,7 +133,7 @@ Describe 'do not create an Excel file when' {
 
         .$testScript @testParams
 
-        Get-ChildItem -Path $testLogFolder | 
+        Get-ChildItem -Path $testParams.LogFolder | 
         Where-Object { $_.Name -like '*AD Users.xlsx' } | 
         Should -BeNullOrEmpty
     } 
@@ -159,7 +157,7 @@ Describe 'do not create an Excel file when' {
 
         .$testScript @testParams
 
-        Get-ChildItem -Path $testLogFolder | 
+        Get-ChildItem -Path $testParams.LogFolder | 
         Where-Object { $_.Name -like '*Printers installed.xlsx' } | 
         Should -BeNullOrEmpty
     } 

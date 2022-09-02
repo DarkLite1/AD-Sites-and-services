@@ -22,8 +22,8 @@ Param (
     [Parameter(Mandatory)]
     [String[]]$MailTo,
     [String]$ComputersNotInOU,
-    [String]$LogFolder = $env:POWERSHELL_LOG_FOLDER,
-    [String]$ScriptAdmin = $env:POWERSHELL_SCRIPT_ADMIN
+    [String]$LogFolder =  "$env:POWERSHELL_LOG_FOLDER\AD Reports\AD Sites and services\$ScriptName",
+    [String[]]$ScriptAdmin = $env:POWERSHELL_SCRIPT_ADMIN
 )
 
 Begin {
@@ -33,13 +33,19 @@ Begin {
         Write-EventLog @EventStartParams
 
         #region Logging
-        $LogParams = @{
-            LogFolder    = New-FolderHC -Path $LogFolder -ChildPath "AD Reports\AD Sites and services\$ScriptName"
-            Name         = $ScriptName
-            Date         = 'ScriptStartTime'
-            NoFormatting = $true
+        try {
+            $logParams = @{
+                LogFolder    = New-Item -Path $LogFolder -ItemType 'Directory' -Force -ErrorAction 'Stop'
+                Name         = $ScriptName
+                Date         = 'ScriptStartTime'
+                NoFormatting = $true
+            }
+            $logFile = New-LogFileNameHC @LogParams
         }
-        $LogFile = New-LogFileNameHC @LogParams
+        Catch {
+            throw "Failed creating the log folder '$LogFolder': $_"
+        }
+        #endregion
 
         $ExcelParams = @{
             AutoSize     = $true
@@ -47,7 +53,6 @@ Begin {
         }
 
         $MailAttachments = @()
-        #endregion
 
         if ($ComputersNotInOU -and (-not (Test-Path -LiteralPath $ComputersNotInOU -PathType Leaf))) {
             throw "File '$ComputersNotInOU' not found."
