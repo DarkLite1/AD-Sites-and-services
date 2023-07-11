@@ -22,8 +22,11 @@ Param (
     [Parameter(Mandatory)]
     [String[]]$MailTo,
     [String]$ComputersNotInOU,
-    [String]$LogFolder =  "$env:POWERSHELL_LOG_FOLDER\AD Reports\AD Sites and services\$ScriptName",
-    [String[]]$ScriptAdmin = $env:POWERSHELL_SCRIPT_ADMIN
+    [String]$LogFolder = "$env:POWERSHELL_LOG_FOLDER\AD Reports\AD Sites and services\$ScriptName",
+    [String[]]$ScriptAdmin = @(
+        $env:POWERSHELL_SCRIPT_ADMIN,
+        $env:POWERSHELL_SCRIPT_ADMIN_BACKUP
+    )
 )
 
 Begin {
@@ -90,7 +93,7 @@ Process {
             $MailAttachments += $ExcelParams.Path
 
             $ADReplicationSite | Sort-Object Name | 
-            Export-Excel @ExcelParams -TableName 'Sites' -WorkSheetName 'Sites'
+            Export-Excel @ExcelParams -TableName 'Sites' -WorksheetName 'Sites'
         }
         #endregion
 
@@ -105,7 +108,7 @@ Process {
             $ExcelParams.Path = "$LogFile AD Sites and subnets.xlsx"
             $MailAttachments += $ExcelParams.Path
 
-            $ADReplicationSubnet | Sort-Object Name | Export-Excel @ExcelParams -TableName 'Subnets' -WorkSheetName 'Subnets'
+            $ADReplicationSubnet | Sort-Object Name | Export-Excel @ExcelParams -TableName 'Subnets' -WorksheetName 'Subnets'
         }
         #endregion
 
@@ -118,9 +121,9 @@ Process {
             $ExcelParams.Path = "$LogFile AD Users.xlsx"
             $MailAttachments += $ExcelParams.Path
 
-            $Users | Group-Object Office | Sort-Object Name | Select-Object @{Name = 'Office'; Expression = { $_.Name } }, Count | Export-Excel @ExcelParams -TableName 'Summary' -WorkSheetName 'Summary'
+            $Users | Group-Object Office | Sort-Object Name | Select-Object @{Name = 'Office'; Expression = { $_.Name } }, Count | Export-Excel @ExcelParams -TableName 'Summary' -WorksheetName 'Summary'
 
-            $Users | Sort-Object Office | Select-Object 'Logon name', 'Display name', Office, OU | Export-Excel @ExcelParams -TableName 'Users' -WorkSheetName 'Users'
+            $Users | Sort-Object Office | Select-Object 'Logon name', 'Display name', Office, OU | Export-Excel @ExcelParams -TableName 'Users' -WorksheetName 'Users'
         }
         #endregion
 
@@ -143,12 +146,12 @@ Process {
 
             $Printers | Group-Object Location | Sort-Object Name |
             Select-Object @{Name = 'Location'; Expression = { $_.Name } }, Count |
-            Export-Excel @ExcelParams -TableName 'Summary' -WorkSheetName 'Summary'
+            Export-Excel @ExcelParams -TableName 'Summary' -WorksheetName 'Summary'
 
             $Printers | Sort-Object ComputerName, Name |
             Select-Object @{Name = 'ServerName'; Expression = { $_.ComputerName } },
             @{Name = 'PrinterName'; Expression = { $_.Name } }, Location |
-            Export-Excel @ExcelParams -TableName 'Printers' -WorkSheetName 'Printers'
+            Export-Excel @ExcelParams -TableName 'Printers' -WorksheetName 'Printers'
         }
         #endregion
     }

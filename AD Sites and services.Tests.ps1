@@ -9,6 +9,7 @@ BeforeAll {
         CountryCode = 'XXX'
         MailTo      = 'bob@contoso.com'
         LogFolder   = "TestDrive:/log" 
+        ScriptAdmin = 'admin@contoso.com'
     }
 
     Mock Get-ADReplicationSite
