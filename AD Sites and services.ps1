@@ -61,7 +61,10 @@ Begin {
 
         $MailAttachments = @()
 
-        if ($ComputersNotInOU -and (-not (Test-Path -LiteralPath $ComputersNotInOU -PathType Leaf))) {
+        if (
+            ($ComputersNotInOU) -and
+            (-not (Test-Path -LiteralPath $ComputersNotInOU -PathType Leaf))
+        ) {
             throw "File '$ComputersNotInOU' not found."
         }
     }
@@ -76,9 +79,12 @@ Begin {
 Process {
     Try {
         #region Create location filter
-        $SearchString = $(foreach ($C in $CountryCode) {
+        $SearchString = $(
+            foreach ($C in $CountryCode) {
                 "(Location -like '$C*')"
-            }) -join ' -or '
+            }
+        ) -join ' -or '
+
         Write-EventLog @EventVerboseParams -Message "CountryCode search string is '$SearchString'"
 
         $Filter = [ScriptBlock]::Create($SearchString)
@@ -102,8 +108,21 @@ Process {
         #endregion
 
         #region Subnets
-        $ADReplicationSubnet = Get-ADReplicationSubnet -Filter $Filter -Properties Description, WhenCreated, WhenChanged, ObjectClass | Select-Object Name, Description, Location,
-        @{Name = 'SiteName'; E = { $null = $_.Site -match '(?<=CN=)(.*?)(?=,CN=)'; $Matches[0] } },
+        $params = @{
+            Filter     = $Filter
+            Properties = @(
+                'Description', 'WhenCreated', 'WhenChanged', 'ObjectClass'
+            )
+        }
+        $ADReplicationSubnet = Get-ADReplicationSubnet @params |
+        Select-Object -Property Name, Description, Location,
+        @{
+            Name       = 'SiteName'
+            Expression = {
+                $null = $_.Site -match '(?<=CN=)(.*?)(?=,CN=)'
+                $Matches[0]
+            }
+        },
         ObjectClass, DistinguishedName, WhenCreated, WhenChanged
 
         if ($ADReplicationSubnet) {
@@ -112,12 +131,14 @@ Process {
             $ExcelParams.Path = "$LogFile AD Sites and subnets.xlsx"
             $MailAttachments += $ExcelParams.Path
 
-            $ADReplicationSubnet | Sort-Object Name | Export-Excel @ExcelParams -TableName 'Subnets' -WorksheetName 'Subnets'
+            $ADReplicationSubnet | Sort-Object Name |
+            Export-Excel @ExcelParams -TableName 'Subnets' -WorksheetName 'Subnets'
         }
         #endregion
 
         #region Users
-        $Users = Get-ADUserHC -OU $OU | Where-Object { $ADReplicationSubnet.Location -notcontains $_.Office }
+        $Users = Get-ADUserHC -OU $OU |
+        Where-Object { $ADReplicationSubnet.Location -notContains $_.Office }
 
         if ($Users) {
             Write-EventLog @EventOutParams -Message "$($Users.Count) AD users found with offices that don't exist in the subnet collection"
@@ -125,9 +146,16 @@ Process {
             $ExcelParams.Path = "$LogFile AD Users.xlsx"
             $MailAttachments += $ExcelParams.Path
 
-            $Users | Group-Object Office | Sort-Object Name | Select-Object @{Name = 'Office'; Expression = { $_.Name } }, Count | Export-Excel @ExcelParams -TableName 'Summary' -WorksheetName 'Summary'
+            $Users | Group-Object Office | Sort-Object Name |
+            Select-Object @{
+                Name       = 'Office'
+                Expression = { $_.Name }
+            }, Count |
+            Export-Excel @ExcelParams -TableName 'Summary' -WorksheetName 'Summary'
 
-            $Users | Sort-Object Office | Select-Object 'Logon name', 'Display name', Office, OU | Export-Excel @ExcelParams -TableName 'Users' -WorksheetName 'Users'
+            $Users | Sort-Object Office |
+            Select-Object -Property 'Logon name', 'Display name', Office, OU |
+            Export-Excel @ExcelParams -TableName 'Users' -WorksheetName 'Users'
         }
         #endregion
 
@@ -140,7 +168,7 @@ Process {
         $ComputerName = Get-ServersHC @ServerParams
 
         $Printers = (Get-PrintersInstalledHC $ComputerName).Printers |
-        Where-Object { $ADReplicationSubnet.Location -notcontains $_.Location }
+        Where-Object { $ADReplicationSubnet.Location -notContains $_.Location }
 
         if ($Printers) {
             Write-EventLog @EventOutParams -Message "$($Printers.Count) installed printers found with locations that don't exist in the subnet collection"
@@ -149,12 +177,21 @@ Process {
             $MailAttachments += $ExcelParams.Path
 
             $Printers | Group-Object Location | Sort-Object Name |
-            Select-Object @{Name = 'Location'; Expression = { $_.Name } }, Count |
+            Select-Object -Property @{
+                Name       = 'Location'
+                Expression = { $_.Name }
+            }, Count |
             Export-Excel @ExcelParams -TableName 'Summary' -WorksheetName 'Summary'
 
             $Printers | Sort-Object ComputerName, Name |
-            Select-Object @{Name = 'ServerName'; Expression = { $_.ComputerName } },
-            @{Name = 'PrinterName'; Expression = { $_.Name } }, Location |
+            Select-Object @{
+                Name       = 'ServerName'
+                Expression = { $_.ComputerName }
+            },
+            @{
+                Name       = 'PrinterName'
+                Expression = { $_.Name }
+            }, Location |
             Export-Excel @ExcelParams -TableName 'Printers' -WorksheetName 'Printers'
         }
         #endregion
@@ -171,7 +208,8 @@ End {
     Try {
         Get-ScriptRuntimeHC -Stop
 
-        $HtmlOu = ConvertTo-OuNameHC -OU $OU | Sort-Object | ConvertTo-HtmlListHC -Header 'Organizational units:'
+        $HtmlOu = ConvertTo-OuNameHC -OU $OU | Sort-Object |
+        ConvertTo-HtmlListHC -Header 'Organizational units:'
 
         $HTML = @"
         <p></p>
