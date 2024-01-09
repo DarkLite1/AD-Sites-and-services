@@ -1,14 +1,18 @@
+#Requires -Version 5.1
+#Requires -Modules Toolbox.HTML, Toolbox.EventLog, ImportExcel
+#Requires -Modules ActiveDirectory, Toolbox.ActiveDirectory
+
 <#
     .SYNOPSIS
         Send a summary of all sites and subnets in an Excel file to the user.
 
     .DESCRIPTION
-        Send a summary of all sites and subnets in an Excel file to the user. 
+        Send a summary of all sites and subnets in an Excel file to the user.
         For all users that have an office that is unknown in the subnets list,
         an Excel file will be created. Same goes for all installed printers on
         servers that have an office location that is unknown.
 
-        This script is intended to run as a scheduled task and will not change 
+        This script is intended to run as a scheduled task and will not change
         anything. It will only report on the found anomalies.
  #>
 
@@ -81,9 +85,9 @@ Process {
         #endregion
 
         #region Sites
-        $ADReplicationSite = Get-ADReplicationSite -Filter $Filter -Properties Location, WhenCreated, 
-        WhenChanged, Subnets, ObjectClass | 
-        Select-Object Name, Description, Location, @{N = 'SubnetCount'; E = { $_.Subnets.Count } }, 
+        $ADReplicationSite = Get-ADReplicationSite -Filter $Filter -Properties Location, WhenCreated,
+        WhenChanged, Subnets, ObjectClass |
+        Select-Object Name, Description, Location, @{N = 'SubnetCount'; E = { $_.Subnets.Count } },
         ObjectClass, DistinguishedName, WhenCreated, WhenChanged
 
         if ($ADReplicationSite) {
@@ -92,14 +96,14 @@ Process {
             $ExcelParams.Path = "$LogFile AD Sites and subnets.xlsx"
             $MailAttachments += $ExcelParams.Path
 
-            $ADReplicationSite | Sort-Object Name | 
+            $ADReplicationSite | Sort-Object Name |
             Export-Excel @ExcelParams -TableName 'Sites' -WorksheetName 'Sites'
         }
         #endregion
 
         #region Subnets
-        $ADReplicationSubnet = Get-ADReplicationSubnet -Filter $Filter -Properties Description, WhenCreated, WhenChanged, ObjectClass | Select-Object Name, Description, Location, 
-        @{Name = 'SiteName'; E = { $null = $_.Site -match '(?<=CN=)(.*?)(?=,CN=)'; $Matches[0] } }, 
+        $ADReplicationSubnet = Get-ADReplicationSubnet -Filter $Filter -Properties Description, WhenCreated, WhenChanged, ObjectClass | Select-Object Name, Description, Location,
+        @{Name = 'SiteName'; E = { $null = $_.Site -match '(?<=CN=)(.*?)(?=,CN=)'; $Matches[0] } },
         ObjectClass, DistinguishedName, WhenCreated, WhenChanged
 
         if ($ADReplicationSubnet) {
